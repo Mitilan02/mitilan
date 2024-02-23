@@ -7,9 +7,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Random;
 
+import Training.*;
+
 public class Dtree {
 
     public static void main(String[] args) {
+    	traindata td = new traindata();
+    	td.main(args);
+    	
         try {
             // Load training data
             CSVLoader loader = new CSVLoader();

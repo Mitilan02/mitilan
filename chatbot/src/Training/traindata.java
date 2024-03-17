@@ -11,7 +11,7 @@ public class traindata {
         try {
             // Load the dataset
             CSVLoader loader = new CSVLoader();
-            loader.setSource(new File("Data/dataset.csv")); // Replace with the actual path to your dataset
+            loader.setSource(new File("Data/Dataset.csv")); // Replace with the actual path to your dataset
             Instances dataset = loader.getDataSet();
             dataset.setClassIndex(dataset.numAttributes() - 1); // Set the class attribute
 

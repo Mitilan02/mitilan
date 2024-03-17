@@ -8,5 +8,10 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/weka.jar"/>
 	<classpathentry kind="lib" path="lib/weka-src.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/Helper/lib/arpack_combined.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/Helper/lib/core.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/Helper/lib/mtj.jar"/>
+	<classpathentry kind="lib" path="lib/commons-csv-1.10.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-csv-1.10.0-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

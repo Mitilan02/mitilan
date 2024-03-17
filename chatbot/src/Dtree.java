@@ -9,14 +9,25 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Random;
 
+import javax.swing.JFrame;
+
+import weka.gui.graphvisualizer.GraphVisualizer;
+import weka.gui.treevisualizer.PlaceNode2;
+import weka.gui.treevisualizer.TreeVisualizer;
+
 public class Dtree extends JFrame {
     private JButton loadDatasetButton;
     private JButton trainDataButton;
+    private JButton showDecisionTreeButton;
     private JTextArea outputTextArea;
+    private J48 treeModel;
+
+    private Instances trainingSet;
+    private Instances testingSet;
 
     public Dtree() {
         setTitle("Decision Tree Classifier");
-        setSize(500, 300);
+        setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel mainPanel = new JPanel();
@@ -24,11 +35,13 @@ public class Dtree extends JFrame {
 
         loadDatasetButton = new JButton("Load Dataset");
         trainDataButton = new JButton("Train Data");
+        showDecisionTreeButton = new JButton("Decision Tree");
         outputTextArea = new JTextArea();
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(loadDatasetButton);
         buttonPanel.add(trainDataButton);
+        buttonPanel.add(showDecisionTreeButton);
 
         mainPanel.add(buttonPanel, BorderLayout.NORTH);
         mainPanel.add(new JScrollPane(outputTextArea), BorderLayout.CENTER);
@@ -46,6 +59,16 @@ public class Dtree extends JFrame {
                 trainData();
             }
         });
+
+        showDecisionTreeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (treeModel != null) {
+                    showDecisionTree();
+                } else {
+                    outputTextArea.append("\nNo decision tree available. Train a model first.");
+                }
+            }
+        });
     }
 
     private void loadDataset() {
@@ -59,66 +82,109 @@ public class Dtree extends JFrame {
                 loader.setSource(selectedFile);
                 Instances data = loader.getDataSet();
                 outputTextArea.setText("Dataset loaded successfully:\n" + data.toSummaryString());
+
+                // Create training and testing sets
+                createTrainTestSets(data);
             } catch (Exception ex) {
                 outputTextArea.setText("Error loading dataset: " + ex.getMessage());
             }
         }
     }
 
+    private void createTrainTestSets(Instances data) {
+        try {
+            // Set the class attribute
+            data.setClassIndex(data.numAttributes() - 1);
+
+            // Create a training set (80% of the data) and a testing set (20% of the data)
+            int trainSize = (int) Math.round(data.numInstances() * 0.8);
+            int testSize = data.numInstances() - trainSize;
+
+            trainingSet = new Instances(data, 0, trainSize);
+            testingSet = new Instances(data, trainSize, testSize);
+
+            // Save training and testing sets to CSV files
+            saveToCSV(trainingSet, "Data/trainingSet.csv");
+            saveToCSV(testingSet, "Data/testingSet.csv");
+        } catch (Exception e) {
+            outputTextArea.append("\nError creating training and testing sets: " + e.getMessage());
+        }
+    }
+
+    private void saveToCSV(Instances instances, String filename) {
+        try {
+            FileWriter writer = new FileWriter(filename);
+            writer.write(instances.toString());
+            writer.close();
+        } catch (Exception e) {
+            outputTextArea.append("\nError saving " + filename + " to CSV: " + e.getMessage());
+        }
+    }
+
     private void trainData() {
         try {
-            // Replace this path with the path of your loaded dataset
-            File datasetFile = new File("Data/trainingset.csv");
-            if (!datasetFile.exists()) {
-                outputTextArea.setText("Please load the dataset first.");
+            if (trainingSet == null || testingSet == null) {
+                outputTextArea.append("\nTraining or testing set is missing. Load dataset first.");
                 return;
             }
 
-            CSVLoader loader = new CSVLoader();
-            loader.setSource(datasetFile);
-            Instances data = loader.getDataSet();
-
-            // Convert string attributes to nominal
-            for (int i = 0; i < data.numAttributes(); i++) {
-                if (data.attribute(i).isString()) {
-                    data = convertStringToNominal(data, i);
-                }
-            }
-
-            data.setClassIndex(data.numAttributes() - 1);
-
             // Build a decision tree
-            J48 tree = new J48();
-            tree.setMinNumObj(10); // Adjust the value as needed
-            tree.buildClassifier(data);
+            treeModel = new J48();
+            treeModel.setMinNumObj(10); // Adjust the value as needed
+            treeModel.buildClassifier(trainingSet);
 
             // Evaluate the decision tree
-            Evaluation eval = new Evaluation(data);
-            eval.crossValidateModel(tree, data, 10, new Random(1));
+            Evaluation eval = new Evaluation(trainingSet);
+            eval.evaluateModel(treeModel, testingSet);
 
             // Print evaluation results
             String evaluationResult = eval.toSummaryString("\nResults\n======\n", false);
 
-            // Save the tree to a .dot file
-            FileWriter writer = new FileWriter("D:/Project/java project/decisionTree.dot");
-            writer.write(tree.graph());
-            writer.close();
-
             // Display evaluation results
             outputTextArea.setText(evaluationResult);
         } catch (Exception e) {
-            outputTextArea.setText("Error training data: " + e.getMessage());
+            outputTextArea.append("\nError training data: " + e.getMessage());
         }
     }
 
-    private static Instances convertStringToNominal(Instances data, int attributeIndex) throws Exception {
-        // Use StringToNominal filter to convert string attribute to nominal
-        weka.filters.unsupervised.attribute.StringToNominal filter = new weka.filters.unsupervised.attribute.StringToNominal();
-        filter.setAttributeRange(Integer.toString(attributeIndex + 1));
-        filter.setInputFormat(data);
-        Instances newData = weka.filters.Filter.useFilter(data, filter);
-        return newData;
+   
+
+    private void showDecisionTree() {
+        try {
+            // Generate DOT string from the decision tree
+            String dotStr = treeModel.graph();
+
+            // Prompt user for download location
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Save Decision Tree PDF");
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int userSelection = fileChooser.showSaveDialog(this);
+            
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File saveLocation = fileChooser.getSelectedFile();
+
+                // Write DOT string to a temporary file
+                File tempDotFile = new File("temp.dot");
+                FileWriter writer = new FileWriter(tempDotFile);
+                writer.write(dotStr);
+                writer.close();
+
+                // Convert DOT file to PDF using GraphViz
+                ProcessBuilder pb = new ProcessBuilder("dot", "-Tpdf", "-o", saveLocation.getAbsolutePath() + "/decision_tree.pdf", tempDotFile.getAbsolutePath());
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                process.waitFor();
+
+                // Delete temporary DOT file
+                tempDotFile.delete();
+
+                outputTextArea.append("\nDecision tree PDF saved successfully.");
+            }
+        } catch (Exception e) {
+            outputTextArea.append("\nError generating and saving decision tree PDF: " + e.getMessage());
+        }
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {

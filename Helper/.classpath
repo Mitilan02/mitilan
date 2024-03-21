@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17">
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/weka.jar"/>
-	<classpathentry kind="lib" path="lib/weka-src.jar"/>
-	<classpathentry kind="lib" path="D:/Project/java project/Helper/lib/arpack_combined.jar"/>
-	<classpathentry kind="lib" path="D:/Project/java project/Helper/lib/core.jar"/>
-	<classpathentry kind="lib" path="D:/Project/java project/Helper/lib/mtj.jar"/>
-	<classpathentry kind="lib" path="lib/commons-csv-1.10.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-csv-1.10.0-sources.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/arpack_combined_all-0.1.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/commons-csv-1.10.0.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/commons-csv-1.10.0-sources.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/core.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/mtj.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/netlib-java-0.9.3.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/weka.jar"/>
+	<classpathentry kind="lib" path="D:/Project/java project/chatbot/lib/weka-src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

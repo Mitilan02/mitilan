@@ -4,13 +4,11 @@ import weka.classifiers.Classifier;
 import weka.classifiers.trees.RandomForest;
 import weka.core.DenseInstance;
 import weka.core.Instances;
-import weka.core.converters.ArffSaver;
 import weka.core.converters.CSVLoader;
 import weka.core.converters.CSVSaver;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,6 +24,10 @@ public class Hcb {
     private static final String DESCRIPTION_FILE = "MasterData/symptom_Description.csv";
 
     public static void main(String[] args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+
+        
+
         // Load dataset from CSV file
         CSVLoader loader = new CSVLoader();
         loader.setSource(new File("Data/dataset.csv"));
@@ -45,11 +47,19 @@ public class Hcb {
         // Build a Random Forest model using training data
         Classifier classifier = new RandomForest();
         classifier.buildClassifier(trainData);
+        
+     // Greeting message and ask for user's name
+        System.out.println("Welcome to the Healthcare Chatbot!");
+        System.out.print("May I know your name? ");
+        String userName = scanner.nextLine().trim();
 
         // Interactive symptom input and prediction
-        predictDisease(classifier, testData);
+        predictDisease(classifier, testData, scanner);
 
-        System.out.println("Training and Testing datasets saved locally.");
+        // Closing message with user's name
+        System.out.println("Thank you, " + userName + "! Have a great day.");
+
+        scanner.close();
     }
 
     private static void saveInstancesToCSV(Instances data, String filename) throws IOException {
@@ -59,76 +69,90 @@ public class Hcb {
         saver.writeBatch();
     }
 
-    private static void predictDisease(Classifier classifier, Instances testData) throws Exception {
-        Scanner scanner = new Scanner(System.in);
+    private static void predictDisease(Classifier classifier, Instances testData, Scanner scanner) throws Exception {
         boolean predicting = true;
-        Map<String, Double> symptomsMap = new HashMap<>();
-
-        String previousSymptom = null;
 
         while (predicting) {
-            if (previousSymptom == null) {
-                // Ask for the first symptom
-                System.out.println("Enter symptom name (or 'done' to finish):");
-                previousSymptom = scanner.nextLine().trim();
+            Map<String, Double> symptomsMap = new HashMap<>();
+            String previousSymptom = null;
 
-                if (previousSymptom.equalsIgnoreCase("done")) {
-                    predicting = false;
-                    continue;
+            while (true) {
+                if (previousSymptom == null) {
+                    // Ask for the first symptom
+                    System.out.println("Enter symptom name (or 'done' to finish):");
+                    previousSymptom = scanner.nextLine().trim();
+
+                    if (previousSymptom.equalsIgnoreCase("done")) {
+                        predicting = false;
+                        continue; // Exit inner loop
+                    }
+
+                    // Automatically set the value to 1 for the first symptom
+                    symptomsMap.put(previousSymptom, 1.0); // Get value for the first symptom
+                } else {
+                    // Determine the next symptom based on the previous one
+                    String nextSymptom = getNextSymptom(previousSymptom, testData);
+                    if (nextSymptom == null) {
+                        // No more symptoms to ask, trigger disease prediction
+                        break; // Exit inner loop
+                    }
+
+                    // Ask for symptom value (yes or no)
+                    System.out.print("Do you have " + nextSymptom + " ? (yes or no): ");
+                    double symptomValue = getSymptomValueFromUser(scanner);
+                    symptomsMap.put(nextSymptom, symptomValue);
+
+                    // Update the previousSymptom to the current one
+                    previousSymptom = nextSymptom;
+                    
+                    if (symptomsMap.size() >= 8) {
+                        break;
+                    }
+                }
+            }
+
+            if (!symptomsMap.isEmpty()) {
+                // Count the number of 'yes' responses in symptomsMap
+                long numberOfYesResponses = symptomsMap.values().stream().filter(value -> value == 1.0).count();
+
+                if (numberOfYesResponses <= 2) {
+                    // Insufficient symptoms provided for prediction
+                    System.out.println("Sorry, the symptoms provided are not sufficient to predict a disease.");
+                } else {
+                    DenseInstance newInstance = new DenseInstance(testData.numAttributes());
+                    newInstance.setDataset(testData);
+
+                    // Set symptom values in the instance
+                    for (int i = 0; i < testData.numAttributes() - 1; i++) {
+                        String attributeName = testData.attribute(i).name();
+                        double symptomValue = symptomsMap.getOrDefault(attributeName, 0.0);
+                        newInstance.setValue(i, symptomValue);
+                    }
+
+                    // Get the predicted class label
+                    double predictedClass = classifier.classifyInstance(newInstance);
+                    String predictedDisease = testData.classAttribute().value((int) predictedClass);
+
+                    // Output predicted disease
+                    System.out.println("Predicted Disease: " + predictedDisease);
+
+                    // Display additional information (precautions, severity, description)
+                    displayAdditionalInfo(predictedDisease);
                 }
 
-                // Ask for symptom value (1 for yes, 0 for no)
-                System.out.print(previousSymptom + " (1 for yes, 0 for no): ");
-                double symptomValue = Double.parseDouble(scanner.nextLine().trim());
-                symptomsMap.put(previousSymptom, symptomValue);
-            } else {
-                // Determine the next symptom based on the previous one
-                String nextSymptom = getNextSymptom(previousSymptom, testData);
-                if (nextSymptom == null) {
-                    // No more symptoms to ask, trigger disease prediction
+                // Ask for another prediction
+                System.out.println("Do you want to predict another disease? (yes or no): ");
+                String continuePrediction = scanner.nextLine().trim().toLowerCase();
+                if (continuePrediction.equals("no")) {
                     predicting = false;
-                    continue;
-                }
-
-                // Ask for symptom value (1 for yes, 0 for no)
-                System.out.print(nextSymptom + " (1 for yes, 0 for no): ");
-                double symptomValue = Double.parseDouble(scanner.nextLine().trim());
-                symptomsMap.put(nextSymptom, symptomValue);
-
-                // Update the previousSymptom to the current one
-                previousSymptom = nextSymptom;
-
-                // Check if enough symptoms have been collected for prediction
-                if (symptomsMap.size() >= 8) { // Adjust this threshold as needed
-                    break; // Stop collecting symptoms and predict disease
                 }
             }
         }
+    }
 
-        if (!symptomsMap.isEmpty()) {
-            // Perform prediction
-            DenseInstance newInstance = new DenseInstance(testData.numAttributes());
-            newInstance.setDataset(testData);
-
-            // Set symptom values in the instance
-            for (int i = 0; i < testData.numAttributes() - 1; i++) {
-                String attributeName = testData.attribute(i).name();
-                double symptomValue = symptomsMap.getOrDefault(attributeName, 0.0);
-                newInstance.setValue(i, symptomValue);
-            }
-
-            // Get the predicted class label
-            double predictedClass = classifier.classifyInstance(newInstance);
-            String predictedDisease = testData.classAttribute().value((int) predictedClass);
-
-            // Output predicted disease
-            System.out.println("Predicted Disease: " + predictedDisease);
-
-            // Display additional information (precautions, severity, description)
-            displayAdditionalInfo(predictedDisease);
-        }
-
-        scanner.close();
+    private static double getSymptomValueFromUser(Scanner scanner) {
+        String userInput = scanner.nextLine().trim().toLowerCase();
+        return (userInput.equals("yes")) ? 1.0 : 0.0;
     }
 
 
@@ -176,7 +200,7 @@ public class Hcb {
     private static void displaySeverityMessage(String predictedDisease) {
         System.out.println("Severity:");
         int severityValue = getSeverity(predictedDisease);
-        if (severityValue > 6) {
+        if (severityValue > 3) {
             System.out.println("- Severity level is high. You should take consultation from a doctor.");
         } else {
             System.out.println("- Severity level is moderate. It might not be that bad, but you should take precautions.");
@@ -195,7 +219,7 @@ public class Hcb {
                     for (int i = 1; i < parts.length; i++) {
                         description.append(parts[i]); // Append each part of the description
                         if (i < parts.length - 1) {
-                            description.append(","); // Add comma between parts
+                            description.append(", "); // Add comma between parts
                         }
                     }
                     System.out.println("- " + description.toString());

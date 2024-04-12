@@ -4,56 +4,47 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.help</groupId>
-  <artifactId>Help</artifactId>
+  <groupId>com.hcb</groupId>
+  <artifactId>HCB</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
-  <name>Help</name>
-  <description>A simple Help.</description>
+  <name>HCB</name>
+  <description>A simple HCB.</description>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
 
   <dependencies>
 	<dependency>
-      <groupId>com.itextpdf</groupId>
-      <artifactId>itextpdf</artifactId>
-      <version>5.5.13.3</version>
+    	<groupId>org.mongodb</groupId>
+    	<artifactId>mongo-java-driver</artifactId>
+    	<version>3.12.14</version>
+	</dependency>
+	<dependency>
+    	<groupId>com.sparkjava</groupId>
+    	<artifactId>spark-core</artifactId>
+    	<version>2.9.4</version>
+	</dependency>
+	<dependency>
+    	<groupId>org.apache.httpcomponents</groupId>
+    	<artifactId>httpclient</artifactId>
+    	<version>4.5.14</version>
+	</dependency>
+	<dependency>
+    	<groupId>com.google.code.gson</groupId>
+    	<artifactId>gson</artifactId>
+    	<version>2.10.1</version>
 	</dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>3.8.1</version>
     </dependency>
-    <dependency>
-      <groupId>nz.ac.waikato.cms.weka</groupId>
-      <artifactId>weka-stable</artifactId>
-      <version>3.8.6</version>
-	</dependency>
-	<dependency>
-      <groupId>org.anarres.graphviz</groupId>
-      <artifactId>graphviz-builder</artifactId>
-      <version>1.0.12</version>
-	</dependency>
-	
-    <dependency>
-        <groupId>org.python</groupId>
-        <artifactId>jython-standalone</artifactId>
-        <version>2.7.2</version> <!-- or the latest version -->
-    </dependency>
-
-
-    <!-- ARPACK (Native Libraries) -->
-    <dependency>
-    	<groupId>org.bytedeco</groupId>
-    	<artifactId>arpack-ng</artifactId>
-		<version>3.9.1-1.5.10</version>
-	</dependency>
   </dependencies>
 
   <build>

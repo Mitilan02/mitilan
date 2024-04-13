@@ -14,6 +14,7 @@ import org.bson.Document;
 
 import com.google.gson.Gson;
 import com.mongodb.MongoClient;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -22,6 +23,8 @@ public class App {
     private MongoClient mongoClient;
     private MongoDatabase database;
     private MongoCollection<Document> collection;
+    private MongoCollection<Document> descriptionCollection;
+    private MongoCollection<Document> precautionCollection;
     private Gson gson;
 
     public App() {
@@ -29,6 +32,8 @@ public class App {
         this.mongoClient = new MongoClient("localhost", 27017);
         this.database = mongoClient.getDatabase("disease");
         this.collection = database.getCollection("Dataset");
+        this.descriptionCollection = database.getCollection("Description");
+        this.precautionCollection = database.getCollection("Precaution");
         this.gson = new Gson();
 
         // Set up SparkJava HTTP service
@@ -65,6 +70,7 @@ public class App {
                              "        }\n" +
                              "    </style>\n" +
                              "</head>\n" +
+                             "<center>"+
                              "<body>\n" +
                              "    <h1>Healthcare Chatbot</h1>\n" +
                              "    <div id=\"chat-container\"></div>\n" +
@@ -148,6 +154,7 @@ public class App {
                              "            chatContainer.scrollTop = chatContainer.scrollHeight;\n" +
                              "        }\n" +
                              "    </script>\n" +
+                             "</center>\n"+
                              "</body>\n" +
                              "</html>";
 
@@ -256,9 +263,16 @@ public class App {
             String diseaseName = entry.getKey();
             double normalizedPercentage = entry.getValue();
 
-            resultBuilder.append(" You may be affected by ").append(diseaseName)
+            resultBuilder.append(" \n You may be affected by ").append(diseaseName)
                          .append(". Possibility value is ").append(String.format("%.2f", normalizedPercentage))
-                         .append("% .");
+                         .append("% . \n");
+         // Retrieve disease description and precautions
+            String description = getDiseaseDescription(diseaseName);
+            String precautions = getDiseasePrecautions(diseaseName);
+
+            resultBuilder.append("Description: \n").append(description).append("\n");
+            resultBuilder.append("Precautions: \n").append(precautions).append(".\n\n");
+            
 
             if (iterator.hasNext()) {
                 resultBuilder.append("\n");
@@ -274,6 +288,18 @@ public class App {
         // MongoDB query to find diseases matching provided Symptoms
         Document query = new Document("Symptoms", new Document("$all", Symptoms));
         return collection.find(query).into(new ArrayList<>());
+    }
+    
+    private String getDiseaseDescription(String diseaseName) {
+        // Retrieve disease description from MongoDB
+        Document descriptionDoc = descriptionCollection.find(Filters.eq("Disease", diseaseName)).first();
+        return (descriptionDoc != null) ? descriptionDoc.getString("Description") : "Description not found.";
+    }
+
+    private String getDiseasePrecautions(String diseaseName) {
+        // Retrieve disease precautions from MongoDB
+        Document precautionDoc = precautionCollection.find(Filters.eq("Disease", diseaseName)).first();
+        return (precautionDoc != null) ? precautionDoc.getString("Precautions") : "Precautions not found.";
     }
 
     public void stopService() {
